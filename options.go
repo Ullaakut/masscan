@@ -2,6 +2,7 @@ package masscan
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 )
@@ -51,9 +52,56 @@ func WithFilterHost(hostFilter func(Host) bool) Option {
 	}
 }
 
-// WithTargets sets targets to scan (CIDR/range/single address).
+// WithTargets sets targets to scan (CIDR/range/single address/hostname).
 func WithTargets(targets ...string) Option {
-	return appendArgsOption(targets...)
+	return func(s *Scanner) error {
+		normalizedTargets, err := normalizeTargets(targets, net.LookupIP)
+		if err != nil {
+			return err
+		}
+
+		s.args = append(s.args, normalizedTargets...)
+		return nil
+	}
+}
+
+func normalizeTargets(targets []string, lookupIP func(host string) ([]net.IP, error)) ([]string, error) {
+	normalizedTargets := make([]string, 0, len(targets))
+
+	for _, target := range targets {
+		if isAddressTarget(target) {
+			normalizedTargets = append(normalizedTargets, target)
+			continue
+		}
+
+		resolvedIPs, err := lookupIP(target)
+		if err != nil || len(resolvedIPs) == 0 {
+			return nil, fmt.Errorf("%w: %s", ErrResolveName, target)
+		}
+
+		for _, resolvedIP := range resolvedIPs {
+			normalizedTargets = append(normalizedTargets, resolvedIP.String())
+		}
+	}
+
+	return normalizedTargets, nil
+}
+
+func isAddressTarget(target string) bool {
+	if net.ParseIP(target) != nil {
+		return true
+	}
+
+	if _, _, err := net.ParseCIDR(target); err == nil {
+		return true
+	}
+
+	parts := strings.Split(target, "-")
+	if len(parts) != 2 {
+		return false
+	}
+
+	return net.ParseIP(parts[0]) != nil && net.ParseIP(parts[1]) != nil
 }
 
 // WithConfigPath sets the configuration file path (--conf).

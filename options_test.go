@@ -1,6 +1,8 @@
 package masscan
 
 import (
+	"errors"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,4 +79,54 @@ func sliceHasSuffix(values, suffix []string) bool {
 	}
 
 	return true
+}
+
+func TestNormalizeTargets(t *testing.T) {
+	t.Parallel()
+
+	t.Run("keeps address inputs unchanged", func(t *testing.T) {
+		t.Parallel()
+
+		targets, err := normalizeTargets([]string{"192.0.2.1", "192.0.2.0/24", "192.0.2.1-192.0.2.5"}, func(_ string) ([]net.IP, error) {
+			t.Fatal("resolver should not be called for address targets")
+			return nil, nil
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, []string{"192.0.2.1", "192.0.2.0/24", "192.0.2.1-192.0.2.5"}, targets)
+	})
+
+	t.Run("resolves hostname target", func(t *testing.T) {
+		t.Parallel()
+
+		targets, err := normalizeTargets([]string{"example.org"}, func(host string) ([]net.IP, error) {
+			require.Equal(t, "example.org", host)
+			return []net.IP{net.ParseIP("192.0.2.10"), net.ParseIP("2001:db8::10")}, nil
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, []string{"192.0.2.10", "2001:db8::10"}, targets)
+	})
+
+	t.Run("returns resolve error when lookup fails", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := normalizeTargets([]string{"invalid.example"}, func(_ string) ([]net.IP, error) {
+			return nil, errors.New("no such host")
+		})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrResolveName)
+	})
+
+	t.Run("returns resolve error when lookup is empty", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := normalizeTargets([]string{"empty.example"}, func(_ string) ([]net.IP, error) {
+			return nil, nil
+		})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrResolveName)
+	})
 }
