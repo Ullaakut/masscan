@@ -58,7 +58,7 @@ func TestBuildArgsDoesNotOverrideExplicitOutput(t *testing.T) {
 
 	scanner, err := NewScanner(
 		WithBinaryPath("masscan"),
-		WithCustomArguments("-oL", "results.txt"),
+		WithRawOption("-oL", "results.txt"),
 		WithOutputFormat(OutputFormatJSON),
 	)
 	require.NoError(t, err)

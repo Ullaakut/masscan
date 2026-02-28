@@ -83,7 +83,7 @@ func newFakeScanner(t *testing.T, fixture string, extraOptions ...Option) *Scann
 
 	options := []Option{
 		WithBinaryPath("sh"),
-		WithCustomArguments(scriptPath, fixturePath),
+		WithRawOption(scriptPath, fixturePath),
 		WithOutputFormat(OutputFormatJSON),
 	}
 	options = append(options, extraOptions...)

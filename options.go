@@ -7,21 +7,6 @@ import (
 	"strings"
 )
 
-// WithCustomArguments sets custom arguments to give to the masscan binary.
-// There should be no reason to use this, unless you are using a custom build
-// of masscan or that this repository isn't up to date with the latest options
-// of the official masscan release.
-//
-// Deprecated: You can use this as a quick way to paste a masscan command into your go code,
-// but remember that the whole purpose of this repository is to be idiomatic,
-// provide type checking, enums for the values that can be passed, etc.
-func WithCustomArguments(args ...string) Option {
-	return func(s *Scanner) error {
-		s.args = append(s.args, args...)
-		return nil
-	}
-}
-
 // WithBinaryPath sets the masscan binary path for a scanner.
 func WithBinaryPath(binaryPath string) Option {
 	return func(s *Scanner) error {
