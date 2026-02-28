@@ -171,7 +171,7 @@ func (s *Scanner) processMasscanResult(stdout, stderr *bytes.Buffer) (*Run, erro
 
 	parsed, err := parseOutput(contents, config.format)
 	if err != nil {
-		return result, fmt.Errorf("%w: %v", ErrParseOutput, err)
+		return result, fmt.Errorf("%w: %w", ErrParseOutput, err)
 	}
 	result = parsed
 
@@ -194,13 +194,14 @@ func parseOutput(contents []byte, format OutputFormat) (*Run, error) {
 	}
 
 	if format == OutputFormatUnknown {
-		if strings.HasPrefix(trimmed, "<") {
+		switch {
+		case strings.HasPrefix(trimmed, "<"):
 			format = OutputFormatXML
-		} else if strings.HasPrefix(trimmed, "[") || strings.HasPrefix(trimmed, "{") {
+		case strings.HasPrefix(trimmed, "[") || strings.HasPrefix(trimmed, "{"):
 			format = OutputFormatJSON
-		} else if strings.Contains(trimmed, "Host:") && strings.Contains(trimmed, "Ports:") {
+		case strings.Contains(trimmed, "Host:") && strings.Contains(trimmed, "Ports:"):
 			format = OutputFormatGrepable
-		} else {
+		default:
 			format = OutputFormatList
 		}
 	}
@@ -237,23 +238,9 @@ type masscanJSONHost struct {
 
 func parseJSON(contents []byte) (*Run, error) {
 	result := &Run{}
-	clean := bytes.TrimSpace(contents)
-
-	var hosts []masscanJSONHost
-	if len(clean) > 0 && clean[0] == '[' {
-		if err := json.Unmarshal(clean, &hosts); err != nil {
-			lineHosts, lineErr := parseJSONLines(contents)
-			if lineErr != nil {
-				return nil, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
-			}
-			hosts = lineHosts
-		}
-	} else {
-		lineHosts, err := parseJSONLines(contents)
-		if err != nil {
-			return nil, err
-		}
-		hosts = lineHosts
+	hosts, err := parseJSONHosts(contents)
+	if err != nil {
+		return nil, err
 	}
 
 	for _, host := range hosts {
@@ -279,8 +266,29 @@ func parseJSON(contents []byte) (*Run, error) {
 	return result, nil
 }
 
-func parseJSONLines(contents []byte) ([]masscanJSONHost, error) {
+func parseJSONHosts(contents []byte) ([]masscanJSONHost, error) {
+	clean := bytes.TrimSpace(contents)
+	if len(clean) == 0 || clean[0] != '[' {
+		return parseJSONLines(contents)
+	}
+
 	var hosts []masscanJSONHost
+	err := json.Unmarshal(clean, &hosts)
+	if err == nil {
+		return hosts, nil
+	}
+
+	lineHosts, lineErr := parseJSONLines(contents)
+	if lineErr != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidOutput, err)
+	}
+
+	return lineHosts, nil
+}
+
+func parseJSONLines(contents []byte) ([]masscanJSONHost, error) {
+	lineCount := bytes.Count(contents, []byte{'\n'}) + 1
+	hosts := make([]masscanJSONHost, 0, lineCount)
 	for line := range strings.SplitSeq(string(contents), "\n") {
 		line = strings.TrimSpace(line)
 		line = strings.TrimSuffix(line, ",")
@@ -289,7 +297,8 @@ func parseJSONLines(contents []byte) ([]masscanJSONHost, error) {
 		}
 
 		var host masscanJSONHost
-		if err := json.Unmarshal([]byte(line), &host); err != nil {
+		err := json.Unmarshal([]byte(line), &host)
+		if err != nil {
 			continue
 		}
 
@@ -305,12 +314,14 @@ func parseJSONLines(contents []byte) ([]masscanJSONHost, error) {
 
 func parsePortNumber(raw json.RawMessage) (int, error) {
 	var asInt int
-	if err := json.Unmarshal(raw, &asInt); err == nil {
+	err := json.Unmarshal(raw, &asInt)
+	if err == nil {
 		return asInt, nil
 	}
 
 	var asString string
-	if err := json.Unmarshal(raw, &asString); err != nil {
+	err = json.Unmarshal(raw, &asString)
+	if err != nil {
 		return 0, fmt.Errorf("%w: invalid port value %q", ErrInvalidOutput, string(raw))
 	}
 
@@ -351,8 +362,9 @@ type xmlState struct {
 
 func parseXML(contents []byte) (*Run, error) {
 	var parsed xmlRun
-	if err := xml.Unmarshal(contents, &parsed); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
+	err := xml.Unmarshal(contents, &parsed)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidOutput, err)
 	}
 
 	result := &Run{}
@@ -385,8 +397,7 @@ func parseXML(contents []byte) (*Run, error) {
 
 func parseList(contents []byte) (*Run, error) {
 	result := &Run{}
-	lines := strings.Split(string(contents), "\n")
-	for _, line := range lines {
+	for line := range strings.SplitSeq(string(contents), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -427,8 +438,7 @@ func parseList(contents []byte) (*Run, error) {
 
 func parseGrepable(contents []byte) (*Run, error) {
 	result := &Run{}
-	lines := strings.Split(string(contents), "\n")
-	for _, line := range lines {
+	for line := range strings.SplitSeq(string(contents), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -482,7 +492,7 @@ var discoveredLine = regexp.MustCompile(`Discovered\s+(\S+)\s+port\s+(\d+)\/(\w+
 
 func parseStdoutLines(contents []byte) (*Run, error) {
 	result := &Run{}
-	for _, line := range strings.Split(string(contents), "\n") {
+	for line := range strings.SplitSeq(string(contents), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue

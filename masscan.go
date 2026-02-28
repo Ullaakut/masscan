@@ -19,6 +19,7 @@ type ScanRunner interface {
 // OutputFormat is the output format produced by masscan.
 type OutputFormat string
 
+// OutputFormat values supported by this package.
 const (
 	OutputFormatJSON     OutputFormat = "json"
 	OutputFormatXML      OutputFormat = "xml"
@@ -93,9 +94,7 @@ type Scanner struct {
 	output      OutputFormat
 }
 
-// RunResult represents the result of an asynchronous run.
-// Option is a function that is used for grouping of Scanner options.
-// Option adds or removes masscan command line arguments.
+// Option configures a Scanner by adding or changing masscan arguments.
 type Option func(*Scanner) error
 
 // NewScanner creates a new Scanner, and can take options to apply to the scanner.

@@ -2,6 +2,7 @@ package masscan
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -47,17 +48,17 @@ func WithPorts(ports ...string) Option {
 
 // WithTopPorts sets top port count (--top-ports).
 func WithTopPorts(count int) Option {
-	return appendEqualsOption("--top-ports", fmt.Sprintf("%d", count))
+	return appendEqualsOption("--top-ports", strconv.Itoa(count))
 }
 
 // WithRate sets packet sending rate (--rate).
 func WithRate(maxRate int) Option {
-	return appendEqualsOption("--rate", fmt.Sprintf("%d", maxRate))
+	return appendEqualsOption("--rate", strconv.Itoa(maxRate))
 }
 
 // WithWait sets waiting time in seconds (--wait).
 func WithWait(delay int) Option {
-	return appendEqualsOption("--wait", fmt.Sprintf("%d", delay))
+	return appendEqualsOption("--wait", strconv.Itoa(delay))
 }
 
 // WithInterface sets outgoing interface (--interface).
@@ -72,7 +73,7 @@ func WithSourceIP(sourceIP string) Option {
 
 // WithSourcePort sets source port (--source-port).
 func WithSourcePort(sourcePort int) Option {
-	return appendEqualsOption("--source-port", fmt.Sprintf("%d", sourcePort))
+	return appendEqualsOption("--source-port", strconv.Itoa(sourcePort))
 }
 
 // WithRouterMAC sets router MAC (--router-mac).
@@ -87,7 +88,7 @@ func WithAdapterIP(adapterIP string) Option {
 
 // WithAdapterPort sets adapter/source port (--adapter-port).
 func WithAdapterPort(port int) Option {
-	return appendEqualsOption("--adapter-port", fmt.Sprintf("%d", port))
+	return appendEqualsOption("--adapter-port", strconv.Itoa(port))
 }
 
 // WithAdapterMAC sets adapter MAC address (--adapter-mac).
@@ -102,7 +103,7 @@ func WithShard(x, y int) Option {
 
 // WithSeed sets randomization seed (--seed).
 func WithSeed(seed int) Option {
-	return appendEqualsOption("--seed", fmt.Sprintf("%d", seed))
+	return appendEqualsOption("--seed", strconv.Itoa(seed))
 }
 
 // WithBanners enables banner grabbing (--banners).
@@ -117,12 +118,12 @@ func WithPing() Option {
 
 // WithResumeIndex resumes from paused index (--resume-index).
 func WithResumeIndex(index int) Option {
-	return appendEqualsOption("--resume-index", fmt.Sprintf("%d", index))
+	return appendEqualsOption("--resume-index", strconv.Itoa(index))
 }
 
 // WithResumeCount scans count from resumed point (--resume-count).
 func WithResumeCount(count int) Option {
-	return appendEqualsOption("--resume-count", fmt.Sprintf("%d", count))
+	return appendEqualsOption("--resume-count", strconv.Itoa(count))
 }
 
 // WithOpenOnly limits output to open ports only (--open-only).

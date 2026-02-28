@@ -1,7 +1,6 @@
 package masscan
 
 import (
-	"context"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -21,7 +20,7 @@ func TestScannerRunWithFilters(t *testing.T) {
 		}),
 	)
 
-	result, err := scanner.Run(context.Background())
+	result, err := scanner.Run(t.Context())
 	if err != nil {
 		t.Fatalf("Run returned error: %v", err)
 	}
@@ -52,7 +51,7 @@ func TestScannerRunReadsOutputFile(t *testing.T) {
 		t.Fatalf("ToFile returned error: %v", err)
 	}
 
-	result, err := scanner.Run(context.Background())
+	result, err := scanner.Run(t.Context())
 	if err != nil {
 		t.Fatalf("Run returned error: %v", err)
 	}
@@ -77,7 +76,7 @@ func TestScannerRunReturnsFatalStderrErrors(t *testing.T) {
 
 	scanner := newFakeScanner(t, "output.json")
 
-	_, err := scanner.Run(context.Background())
+	_, err := scanner.Run(t.Context())
 	if !errors.Is(err, ErrRequiresRoot) {
 		t.Fatalf("expected ErrRequiresRoot, got: %v", err)
 	}
@@ -90,7 +89,7 @@ func TestScannerRunCollectsWarnings(t *testing.T) {
 
 	scanner := newFakeScanner(t, "output.json")
 
-	result, err := scanner.Run(context.Background())
+	result, err := scanner.Run(t.Context())
 	if err != nil {
 		t.Fatalf("Run returned error: %v", err)
 	}
