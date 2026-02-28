@@ -1,4 +1,4 @@
-package masscan
+package parse
 
 import (
 	"os"
@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseOutput(t *testing.T) {
+func TestOutput(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name       string
 		fixture    string
-		format     OutputFormat
+		format     Format
 		hosts      int
 		firstHost  string
 		firstPorts int
@@ -24,7 +24,7 @@ func TestParseOutput(t *testing.T) {
 		{
 			name:       "json array",
 			fixture:    "output.json",
-			format:     OutputFormatJSON,
+			format:     FormatJSON,
 			hosts:      2,
 			firstHost:  "192.0.2.10",
 			firstPorts: 2,
@@ -32,7 +32,7 @@ func TestParseOutput(t *testing.T) {
 		{
 			name:       "json lines",
 			fixture:    "output_json_lines.txt",
-			format:     OutputFormatJSON,
+			format:     FormatJSON,
 			hosts:      2,
 			firstHost:  "192.0.2.70",
 			firstPorts: 1,
@@ -40,7 +40,7 @@ func TestParseOutput(t *testing.T) {
 		{
 			name:       "xml",
 			fixture:    "output_xml.xml",
-			format:     OutputFormatXML,
+			format:     FormatXML,
 			hosts:      2,
 			firstHost:  "192.168.1.254",
 			firstPorts: 1,
@@ -49,7 +49,7 @@ func TestParseOutput(t *testing.T) {
 		{
 			name:       "list",
 			fixture:    "output_list.txt",
-			format:     OutputFormatList,
+			format:     FormatList,
 			hosts:      2,
 			firstHost:  "192.0.2.40",
 			firstPorts: 1,
@@ -57,7 +57,7 @@ func TestParseOutput(t *testing.T) {
 		{
 			name:       "grepable",
 			fixture:    "output_grepable.txt",
-			format:     OutputFormatGrepable,
+			format:     FormatGrepable,
 			hosts:      1,
 			firstHost:  "192.0.2.50",
 			firstPorts: 2,
@@ -65,7 +65,7 @@ func TestParseOutput(t *testing.T) {
 		{
 			name:       "unknown autodetect json",
 			fixture:    "output.json",
-			format:     OutputFormatUnknown,
+			format:     FormatUnknown,
 			hosts:      2,
 			firstHost:  "192.0.2.10",
 			firstPorts: 2,
@@ -73,7 +73,7 @@ func TestParseOutput(t *testing.T) {
 		{
 			name:       "unknown autodetect stdout",
 			fixture:    "output_stdout.txt",
-			format:     OutputFormatUnknown,
+			format:     FormatUnknown,
 			hosts:      1,
 			firstHost:  "192.0.2.60",
 			firstPorts: 2,
@@ -85,7 +85,7 @@ func TestParseOutput(t *testing.T) {
 			t.Parallel()
 
 			contents := mustReadFixture(t, test.fixture)
-			result, err := parseOutput(contents, test.format)
+			result, err := Output(contents, test.format)
 			require.NoError(t, err)
 			require.Len(t, result.Hosts, test.hosts)
 			assert.Equal(t, test.firstHost, result.Hosts[0].Address)
@@ -97,20 +97,20 @@ func TestParseOutput(t *testing.T) {
 	}
 }
 
-func TestParseOutputErrors(t *testing.T) {
+func TestOutputErrors(t *testing.T) {
 	t.Parallel()
 
-	_, err := parseOutput([]byte("abc"), OutputFormatBinary)
-	assert.ErrorIs(t, err, ErrUnsupportedOutputFormat)
+	_, err := Output([]byte("abc"), FormatBinary)
+	assert.ErrorIs(t, err, ErrUnsupportedFormat)
 
-	_, err = parseOutput([]byte("not-json"), OutputFormatJSON)
+	_, err = Output([]byte("not-json"), FormatJSON)
 	assert.ErrorIs(t, err, ErrInvalidOutput)
 }
 
 func mustReadFixture(t *testing.T, name string) []byte {
 	t.Helper()
 
-	fixturePath := filepath.Join("tests", "fixtures", name)
+	fixturePath := filepath.Join("..", "..", "tests", "fixtures", name)
 	contents, err := os.ReadFile(fixturePath)
 	require.NoError(t, err)
 

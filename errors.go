@@ -1,7 +1,10 @@
 package masscan
 
 import (
+	"bytes"
+	"context"
 	"errors"
+	"strings"
 )
 
 var (
@@ -38,3 +41,65 @@ var (
 	// ErrResolveName means that masscan could not resolve a name.
 	ErrResolveName = errors.New("masscan could not resolve a name")
 )
+
+func mapRunError(ctx context.Context, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	switch {
+	case errors.Is(ctx.Err(), context.DeadlineExceeded):
+		return ErrScanTimeout
+	case errors.Is(ctx.Err(), context.Canceled):
+		return ErrScanInterrupt
+	case isInterruptExit(err):
+		return ErrScanInterrupt
+	default:
+		return err
+	}
+}
+
+func isInterruptExit(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	switch err.Error() {
+	case "exit status 0xc000013a": // Exit code for ctrl+c on Windows
+		return true
+	case "exit status 130": // Exit code for ctrl+c on Linux
+		return true
+	default:
+		return false
+	}
+}
+
+// checkStdErr writes the output of stderr to the warnings array.
+// It also processes masscan stderr output containing none-critical errors and warnings.
+func checkStdErr(stderr *bytes.Buffer) (warnings []string, err error) {
+	if stderr.Len() <= 0 {
+		return nil, nil
+	}
+
+	stderrSplit := strings.SplitSeq(strings.Trim(stderr.String(), "\n "), "\n")
+
+	for warning := range stderrSplit {
+		warnings = append(warnings, strings.Trim(warning, " "))
+		switch {
+		case strings.Contains(warning, "Malloc Failed!"):
+			return warnings, ErrMallocFailed
+		case strings.Contains(strings.ToLower(warning), "permission denied"):
+			return warnings, ErrRequiresRoot
+		case strings.Contains(strings.ToLower(warning), "you must be root"):
+			return warnings, ErrRequiresRoot
+		case strings.Contains(warning, "requires root privileges."):
+			return warnings, ErrRequiresRoot
+		case strings.Contains(strings.ToLower(warning), "could not resolve"):
+			return warnings, ErrResolveName
+		case strings.Contains(strings.ToLower(warning), "error resolving"):
+			return warnings, ErrResolveName
+		default:
+		}
+	}
+	return warnings, nil
+}

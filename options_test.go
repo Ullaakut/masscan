@@ -1,6 +1,11 @@
 package masscan
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 func TestOptionsAppendExpectedArguments(t *testing.T) {
 	t.Parallel()
@@ -27,13 +32,8 @@ func TestOptionsAppendExpectedArguments(t *testing.T) {
 			t.Parallel()
 
 			scanner, err := NewScanner(WithBinaryPath("masscan"), test.option)
-			if err != nil {
-				t.Fatalf("NewScanner returned error: %v", err)
-			}
-
-			if !sliceHasSuffix(scanner.Args(), test.expected) {
-				t.Fatalf("args %v do not end with expected suffix %v", scanner.Args(), test.expected)
-			}
+			require.NoError(t, err)
+			assert.True(t, sliceHasSuffix(scanner.Args(), test.expected), "args %v do not end with expected suffix %v", scanner.Args(), test.expected)
 		})
 	}
 }
@@ -46,13 +46,9 @@ func TestBuildArgsAppliesOutputFormatWhenMissing(t *testing.T) {
 		WithTargets("192.0.2.0/24"),
 		WithOutputFormat(OutputFormatXML),
 	)
-	if err != nil {
-		t.Fatalf("NewScanner returned error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if !sliceHasSuffix(scanner.buildArgs(), []string{"-oX", "-"}) {
-		t.Fatalf("buildArgs did not append xml output args: %v", scanner.buildArgs())
-	}
+	assert.True(t, sliceHasSuffix(scanner.buildArgs(), []string{"-oX", "-"}), "buildArgs did not append xml output args: %v", scanner.buildArgs())
 }
 
 func TestBuildArgsDoesNotOverrideExplicitOutput(t *testing.T) {
@@ -63,13 +59,9 @@ func TestBuildArgsDoesNotOverrideExplicitOutput(t *testing.T) {
 		WithCustomArguments("-oL", "results.txt"),
 		WithOutputFormat(OutputFormatJSON),
 	)
-	if err != nil {
-		t.Fatalf("NewScanner returned error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if !sliceHasSuffix(scanner.buildArgs(), []string{"-oL", "results.txt"}) {
-		t.Fatalf("buildArgs changed explicit output args: %v", scanner.buildArgs())
-	}
+	assert.True(t, sliceHasSuffix(scanner.buildArgs(), []string{"-oL", "results.txt"}), "buildArgs changed explicit output args: %v", scanner.buildArgs())
 }
 
 func sliceHasSuffix(values, suffix []string) bool {

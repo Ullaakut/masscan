@@ -6,19 +6,49 @@ import (
 	"strings"
 )
 
-func appendArgsOption(args ...string) Option {
+// WithCustomArguments sets custom arguments to give to the masscan binary.
+// There should be no reason to use this, unless you are using a custom build
+// of masscan or that this repository isn't up to date with the latest options
+// of the official masscan release.
+//
+// Deprecated: You can use this as a quick way to paste a masscan command into your go code,
+// but remember that the whole purpose of this repository is to be idiomatic,
+// provide type checking, enums for the values that can be passed, etc.
+func WithCustomArguments(args ...string) Option {
 	return func(s *Scanner) error {
 		s.args = append(s.args, args...)
 		return nil
 	}
 }
 
-func appendKVOption(flag, value string) Option {
-	return appendArgsOption(flag, value)
+// WithBinaryPath sets the masscan binary path for a scanner.
+func WithBinaryPath(binaryPath string) Option {
+	return func(s *Scanner) error {
+		s.binaryPath = binaryPath
+		return nil
+	}
 }
 
-func appendEqualsOption(flag, value string) Option {
-	return appendArgsOption(fmt.Sprintf("%s=%s", flag, value))
+// WithFilterPort allows to set a custom function to filter out ports that
+// don't fulfill a given condition. When the given function returns true,
+// the port is kept, otherwise it is removed from the result. Can be used
+// along with WithFilterHost.
+func WithFilterPort(portFilter func(Port) bool) Option {
+	return func(s *Scanner) error {
+		s.portFilter = portFilter
+		return nil
+	}
+}
+
+// WithFilterHost allows to set a custom function to filter out hosts that
+// don't fulfill a given condition. When the given function returns true,
+// the host is kept, otherwise it is removed from the result. Can be used
+// along with WithFilterPort.
+func WithFilterHost(hostFilter func(Host) bool) Option {
+	return func(s *Scanner) error {
+		s.hostFilter = hostFilter
+		return nil
+	}
 }
 
 // WithTargets sets targets to scan (CIDR/range/single address).
@@ -156,4 +186,19 @@ func WithRawFlag(flag string) Option {
 // WithRawOption appends a raw masscan option and value pair.
 func WithRawOption(flag, value string) Option {
 	return appendKVOption(flag, value)
+}
+
+func appendArgsOption(args ...string) Option {
+	return func(s *Scanner) error {
+		s.args = append(s.args, args...)
+		return nil
+	}
+}
+
+func appendKVOption(flag, value string) Option {
+	return appendArgsOption(flag, value)
+}
+
+func appendEqualsOption(flag, value string) Option {
+	return appendArgsOption(fmt.Sprintf("%s=%s", flag, value))
 }

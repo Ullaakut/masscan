@@ -1,9 +1,11 @@
 package masscan
 
 import (
-	"errors"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestScannerRunWithFilters(t *testing.T) {
@@ -21,21 +23,11 @@ func TestScannerRunWithFilters(t *testing.T) {
 	)
 
 	result, err := scanner.Run(t.Context())
-	if err != nil {
-		t.Fatalf("Run returned error: %v", err)
-	}
-
-	if len(result.Hosts) != 1 {
-		t.Fatalf("hosts mismatch: got %d want 1", len(result.Hosts))
-	}
-
-	if result.Hosts[0].Address != "192.0.2.10" {
-		t.Fatalf("host mismatch: got %q", result.Hosts[0].Address)
-	}
-
-	if len(result.Hosts[0].Ports) != 1 || result.Hosts[0].Ports[0].Number != 443 {
-		t.Fatalf("filtered ports mismatch: %#v", result.Hosts[0].Ports)
-	}
+	require.NoError(t, err)
+	require.Len(t, result.Hosts, 1)
+	assert.Equal(t, "192.0.2.10", result.Hosts[0].Address)
+	require.Len(t, result.Hosts[0].Ports, 1)
+	assert.Equal(t, 443, result.Hosts[0].Ports[0].Number)
 }
 
 func TestScannerRunReadsOutputFile(t *testing.T) {
@@ -47,26 +39,13 @@ func TestScannerRunReadsOutputFile(t *testing.T) {
 
 	outPath := filepath.Join(t.TempDir(), "scan.xml")
 	_, err := scanner.ToFile(outPath)
-	if err != nil {
-		t.Fatalf("ToFile returned error: %v", err)
-	}
+	require.NoError(t, err)
 
 	result, err := scanner.Run(t.Context())
-	if err != nil {
-		t.Fatalf("Run returned error: %v", err)
-	}
-
-	if len(result.Hosts) != 2 {
-		t.Fatalf("hosts mismatch: got %d want 2", len(result.Hosts))
-	}
-
-	if result.Hosts[0].Address != "192.168.1.254" {
-		t.Fatalf("host mismatch: got %q", result.Hosts[0].Address)
-	}
-
-	if result.Hosts[0].Timestamp != "1772276417" {
-		t.Fatalf("timestamp mismatch: got %q", result.Hosts[0].Timestamp)
-	}
+	require.NoError(t, err)
+	require.Len(t, result.Hosts, 2)
+	assert.Equal(t, "192.168.1.254", result.Hosts[0].Address)
+	assert.Equal(t, "1772276417", result.Hosts[0].Timestamp)
 }
 
 func TestScannerRunReturnsFatalStderrErrors(t *testing.T) {
@@ -77,9 +56,7 @@ func TestScannerRunReturnsFatalStderrErrors(t *testing.T) {
 	scanner := newFakeScanner(t, "output.json")
 
 	_, err := scanner.Run(t.Context())
-	if !errors.Is(err, ErrRequiresRoot) {
-		t.Fatalf("expected ErrRequiresRoot, got: %v", err)
-	}
+	assert.ErrorIs(t, err, ErrRequiresRoot)
 }
 
 func TestScannerRunCollectsWarnings(t *testing.T) {
@@ -90,14 +67,11 @@ func TestScannerRunCollectsWarnings(t *testing.T) {
 	scanner := newFakeScanner(t, "output.json")
 
 	result, err := scanner.Run(t.Context())
-	if err != nil {
-		t.Fatalf("Run returned error: %v", err)
-	}
+	require.NoError(t, err)
 
 	warnings := result.Warnings()
-	if len(warnings) != 1 || warnings[0] != "non-fatal warning" {
-		t.Fatalf("warnings mismatch: %#v", warnings)
-	}
+	require.Len(t, warnings, 1)
+	assert.Equal(t, "non-fatal warning", warnings[0])
 }
 
 func newFakeScanner(t *testing.T, fixture string, extraOptions ...Option) *Scanner {
@@ -114,9 +88,7 @@ func newFakeScanner(t *testing.T, fixture string, extraOptions ...Option) *Scann
 	options = append(options, extraOptions...)
 
 	scanner, err := NewScanner(options...)
-	if err != nil {
-		t.Fatalf("NewScanner returned error: %v", err)
-	}
+	require.NoError(t, err)
 
 	return scanner
 }
