@@ -1,0 +1,52 @@
+name: build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    paths:
+      - 'examples/*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Go
+        id: install-go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Cache Go mod
+        id: gomod
+        uses: actions/cache@v5
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-mod-
+
+      - name: Cache Go build
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ github.ref_name }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-
+
+      - name: Download dependencies
+        run: go mod download
+        if: steps.gomod.outputs.cache-hit != 'true'
+
+      - name: Print Go version
+        run: go version
+
+      - name: Build examples
+        run: for dir in examples/*/; do go build -o $dir/bin $dir/main.go; done
