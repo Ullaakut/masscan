@@ -1,6 +1,7 @@
 package masscan
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -91,4 +92,108 @@ func newFakeScanner(t *testing.T, fixture string, extraOptions ...Option) *Scann
 	require.NoError(t, err)
 
 	return scanner
+}
+
+func TestOutputFlag(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		format OutputFormat
+		flag   string
+		ok     bool
+	}{
+		{name: "json", format: OutputFormatJSON, flag: "-oJ", ok: true},
+		{name: "xml", format: OutputFormatXML, flag: "-oX", ok: true},
+		{name: "list", format: OutputFormatList, flag: "-oL", ok: true},
+		{name: "grepable", format: OutputFormatGrepable, flag: "-oG", ok: true},
+		{name: "binary", format: OutputFormatBinary, flag: "-oB", ok: true},
+		{name: "unknown", format: OutputFormatUnknown, flag: "", ok: false},
+		{name: "invalid", format: OutputFormat("invalid"), flag: "", ok: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			flag, ok := test.format.outputFlag()
+			assert.Equal(t, test.ok, ok)
+			assert.Equal(t, test.flag, flag)
+		})
+	}
+}
+
+func TestScannerWithOutputFormatMethod(t *testing.T) {
+	t.Parallel()
+
+	t.Run("sets valid output format", func(t *testing.T) {
+		t.Parallel()
+
+		s := &Scanner{output: OutputFormatJSON}
+		updated, err := s.WithOutputFormat(OutputFormatXML)
+		require.NoError(t, err)
+		require.Same(t, s, updated)
+		assert.Equal(t, OutputFormatXML, s.output)
+	})
+
+	t.Run("returns error for invalid output format", func(t *testing.T) {
+		t.Parallel()
+
+		s := &Scanner{output: OutputFormatJSON}
+		updated, err := s.WithOutputFormat(OutputFormat("invalid"))
+		require.Error(t, err)
+		require.Same(t, s, updated)
+		assert.ErrorIs(t, err, ErrUnsupportedOutputFormat)
+		assert.Equal(t, OutputFormatJSON, s.output)
+	})
+}
+
+func TestScannerAddOptions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("applies options in order", func(t *testing.T) {
+		t.Parallel()
+
+		s := &Scanner{}
+		updated, err := s.AddOptions(
+			WithTargets("192.0.2.1"),
+			WithPorts("443"),
+		)
+		require.NoError(t, err)
+		require.Same(t, s, updated)
+		assert.Equal(t, []string{"192.0.2.1", "-p", "443"}, s.args)
+	})
+
+	t.Run("returns wrapped option error", func(t *testing.T) {
+		t.Parallel()
+
+		s := &Scanner{}
+		optionErr := errors.New("option failed")
+		badOption := func(*Scanner) error { return optionErr }
+
+		updated, err := s.AddOptions(badOption)
+		require.Error(t, err)
+		require.Same(t, s, updated)
+		assert.ErrorIs(t, err, optionErr)
+	})
+}
+
+func TestNewScanner(t *testing.T) {
+	t.Run("returns option application error", func(t *testing.T) {
+		t.Parallel()
+
+		optionErr := errors.New("option failed")
+		badOption := func(*Scanner) error { return optionErr }
+		_, err := NewScanner(badOption)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, optionErr)
+	})
+
+	t.Run("returns not installed error when binary lookup fails", func(t *testing.T) {
+		t.Setenv("PATH", "")
+		scanner, err := NewScanner()
+		require.Error(t, err)
+		assert.Nil(t, scanner)
+		assert.ErrorIs(t, err, ErrMasscanNotInstalled)
+	})
 }

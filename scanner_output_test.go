@@ -123,3 +123,57 @@ func TestBuildArgs(t *testing.T) {
 		})
 	}
 }
+
+func TestOutputConfig(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns explicit output config", func(t *testing.T) {
+		t.Parallel()
+
+		s := Scanner{args: []string{"-p80", "-oL", "results.txt"}, output: OutputFormatJSON}
+		cfg := s.outputConfig()
+
+		assert.Equal(t, OutputFormatList, cfg.format)
+		assert.Equal(t, "results.txt", cfg.path)
+		assert.Equal(t, "-oL", cfg.setBy)
+	})
+
+	t.Run("returns default output config with stdout", func(t *testing.T) {
+		t.Parallel()
+
+		s := Scanner{args: []string{"-p80"}, output: OutputFormatXML}
+		cfg := s.outputConfig()
+
+		assert.Equal(t, OutputFormatXML, cfg.format)
+		assert.Equal(t, "-", cfg.path)
+		assert.Equal(t, "-oX", cfg.setBy)
+	})
+
+	t.Run("returns default output config with file", func(t *testing.T) {
+		t.Parallel()
+
+		path := "scan.json"
+		s := Scanner{args: []string{"-p80"}, output: OutputFormatJSON, toFile: &path}
+		cfg := s.outputConfig()
+
+		assert.Equal(t, OutputFormatJSON, cfg.format)
+		assert.Equal(t, "scan.json", cfg.path)
+		assert.Equal(t, "-oJ", cfg.setBy)
+	})
+
+	t.Run("explicit output flag wins over default path configuration", func(t *testing.T) {
+		t.Parallel()
+
+		path := "default.json"
+		s := Scanner{
+			args:   []string{"-p80", "-oL", "explicit.list"},
+			output: OutputFormatJSON,
+			toFile: &path,
+		}
+		cfg := s.outputConfig()
+
+		assert.Equal(t, OutputFormatList, cfg.format)
+		assert.Equal(t, "explicit.list", cfg.path)
+		assert.Equal(t, "-oL", cfg.setBy)
+	})
+}
