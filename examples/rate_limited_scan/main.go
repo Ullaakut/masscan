@@ -9,6 +9,11 @@ import (
 	"github.com/Ullaakut/masscan"
 )
 
+// main runs a rate-limited scan with excludes and open-port filtering.
+//
+// Example output:
+// 192.168.1.70 80/tcp open
+// 192.168.1.70 443/tcp open
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()

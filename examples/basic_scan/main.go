@@ -8,6 +8,10 @@ import (
 	"github.com/Ullaakut/masscan"
 )
 
+// main runs a basic TCP port scan on a local subnet.
+//
+// Example output:
+// Host: 192.168.1.70 Port: 80/tcp (open)
 func main() {
 	scanner, err := masscan.NewScanner(
 		masscan.WithTargets("192.168.1.0/24"),

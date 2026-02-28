@@ -1,0 +1,2 @@
+{"ip":"192.0.2.70","ports":[{"port":3306,"proto":"tcp","status":"open"}]}
+{"ip":"192.0.2.71","ports":[{"port":"5432","proto":"tcp","status":"open"}]}

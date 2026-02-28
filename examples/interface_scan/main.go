@@ -9,20 +9,19 @@ import (
 	"github.com/Ullaakut/masscan"
 )
 
+// main demonstrates interface, source, and adapter-level scan controls.
+//
+// Example output:
+// 45.33.32.156 80/tcp open
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	scanner, err := masscan.NewScanner(
-		masscan.WithTargets("192.168.1.0/24"),
-		masscan.WithPorts("53", "161"),
+		masscan.WithTargets("45.33.32.156"),
+		masscan.WithPorts("80", "443"),
 		masscan.WithInterface("eth0"),
-		masscan.WithSourceIP("192.168.1.10"),
 		masscan.WithSourcePort(61000),
-		masscan.WithAdapterIP("192.168.1.10"),
-		masscan.WithAdapterPort(61000),
-		masscan.WithAdapterMAC("00:11:22:33:44:55"),
-		masscan.WithRouterMAC("aa:bb:cc:dd:ee:ff"),
 		masscan.WithRate(2000),
 		masscan.WithWait(2),
 		masscan.WithOutputFormat(masscan.OutputFormatJSON),
@@ -39,6 +38,11 @@ func main() {
 
 	for _, warning := range result.Warnings() {
 		log.Printf("warning: %s", warning)
+	}
+
+	if len(result.Hosts) == 0 {
+		fmt.Println("No open ports found.")
+		return
 	}
 
 	for _, host := range result.Hosts {

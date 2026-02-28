@@ -1,0 +1,2 @@
+Discovered open port 1234/tcp on 192.0.2.60
+Discovered open port 22/tcp on 192.0.2.60

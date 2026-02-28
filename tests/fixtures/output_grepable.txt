@@ -1,0 +1,1 @@
+Host: 192.0.2.50 ()  Ports: 80/open/tcp//http///, 443/closed/tcp//https///

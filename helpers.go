@@ -329,7 +329,8 @@ type xmlRun struct {
 type xmlHost struct {
 	Addresses []xmlAddress `xml:"address"`
 	Ports     []xmlPort    `xml:"ports>port"`
-	Timestamp string       `xml:"starttime,attr"`
+	StartTime string       `xml:"starttime,attr"`
+	EndTime   string       `xml:"endtime,attr"`
 }
 
 type xmlAddress struct {
@@ -356,7 +357,12 @@ func parseXML(contents []byte) (*Run, error) {
 
 	result := &Run{}
 	for _, host := range parsed.Hosts {
-		mapped := Host{Timestamp: host.Timestamp}
+		timestamp := host.StartTime
+		if timestamp == "" {
+			timestamp = host.EndTime
+		}
+
+		mapped := Host{Timestamp: timestamp}
 		if len(host.Addresses) > 0 {
 			mapped.Address = host.Addresses[0].Addr
 		}

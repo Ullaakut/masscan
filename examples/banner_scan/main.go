@@ -9,12 +9,16 @@ import (
 	"github.com/Ullaakut/masscan"
 )
 
+// main runs a banner-enabled scan against a public target.
+//
+// Example output:
+// 45.33.32.156 80/tcp open reason=syn-ack ttl=43
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	scanner, err := masscan.NewScanner(
-		masscan.WithTargets("scanme.nmap.org"),
+		masscan.WithTargets("45.33.32.156"),
 		masscan.WithPorts("22", "80", "443"),
 		masscan.WithBanners(),
 		masscan.WithRate(500),

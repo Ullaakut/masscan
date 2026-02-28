@@ -1,0 +1,35 @@
+[
+  {
+    "ip": "192.0.2.10",
+    "timestamp": "1740000000",
+    "ports": [
+      {
+        "port": 80,
+        "proto": "tcp",
+        "status": "open",
+        "reason": "syn-ack",
+        "ttl": 54
+      },
+      {
+        "port": "443",
+        "proto": "tcp",
+        "status": "open",
+        "reason": "syn-ack",
+        "ttl": 54
+      }
+    ]
+  },
+  {
+    "ip": "192.0.2.20",
+    "timestamp": "1740000001",
+    "ports": [
+      {
+        "port": 22,
+        "proto": "tcp",
+        "status": "closed",
+        "reason": "rst",
+        "ttl": 53
+      }
+    ]
+  }
+]

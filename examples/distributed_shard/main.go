@@ -9,16 +9,21 @@ import (
 	"github.com/Ullaakut/masscan"
 )
 
+// main demonstrates distributed scanning with shard and seed options.
+//
+// Example output:
+// 45.33.32.156 80/tcp open
+// Shard result count: 1
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	scanner, err := masscan.NewScanner(
-		masscan.WithTargets("10.0.0.0/8"),
-		masscan.WithTopPorts(100),
-		masscan.WithShard(1, 4),
+		masscan.WithTargets("45.33.32.156"),
+		masscan.WithPorts("80", "443"),
+		masscan.WithShard(1, 1),
 		masscan.WithSeed(20260228),
-		masscan.WithRate(25000),
+		masscan.WithRate(3000),
 		masscan.WithWait(2),
 		masscan.WithOutputFormat(masscan.OutputFormatList),
 	)
