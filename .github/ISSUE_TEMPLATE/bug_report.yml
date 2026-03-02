@@ -17,6 +17,16 @@ body:
   - type: textarea
     id: version
     attributes:
+      label: Go package version
+      description: Output of `go list -m all | grep github.com/Ullaakut/masscan`
+      render: bash
+      placeholder: |
+        github.com/Ullaakut/masscan v1.2.3
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
       label: Masscan version
       description: Output of `masscan --version`
       render: bash
