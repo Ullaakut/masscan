@@ -34,7 +34,7 @@ body:
     attributes:
       label: Environment
       description: How do you use masscan?
-      default: 0
+
     validations:
       required: true
   - type: textarea
